@@ -1,4 +1,4 @@
-﻿using JobMatcher.Application.Jobs;
+using JobMatcher.Application.Jobs;
 using JobMatcher.Domain.Jobs;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -12,12 +12,11 @@ public static class JobEndpoints
     {
         app.MapPost(
             "/api/jobs/extract",
-            async Task<Results<
-                Ok<ExtractedJob>,
-                BadRequest<ProblemDetails>,
-                NotFound<ProblemDetails>>> (
+            async Task<IResult> (
                 ExtractJobRequest? request,
                 JobExtractionService service,
+                HttpContext httpContext,
+                ILoggerFactory loggerFactory,
                 CancellationToken cancellationToken) =>
             {
                 if (request is null)
@@ -44,16 +43,47 @@ public static class JobEndpoints
                             Detail = validationError
                         });
 
-                var job = await service.ExtractAsync(url, cancellationToken);
+                var logger = loggerFactory.CreateLogger("JobMatcher.Api.JobEndpoints");
+                using var scope = logger.BeginScope(new Dictionary<string, object?>
+                {
+                    ["ExtractionId"] = httpContext.TraceIdentifier,
+                    ["Host"] = url.Host
+                });
+                logger.LogDebug("Job extraction request started");
 
-                if (job is null)
-                    return TypedResults.NotFound(
-                        new ProblemDetails
-                        {
-                            Title = "Job could not be extracted"
-                        });
+                var extraction = await service.ExtractAsync(
+                    url,
+                    httpContext.TraceIdentifier,
+                    cancellationToken);
 
-                return TypedResults.Ok(job);
+                if (extraction.Job is not null)
+                    return TypedResults.Ok(extraction.Job);
+
+                var statusCode = extraction.FailureCategory switch
+                {
+                    ExtractionFailureCategory.Timeout => StatusCodes.Status504GatewayTimeout,
+                    ExtractionFailureCategory.Blocked or
+                    ExtractionFailureCategory.HttpError or
+                    ExtractionFailureCategory.BrowserError => StatusCodes.Status502BadGateway,
+                    _ => StatusCodes.Status422UnprocessableEntity
+                };
+
+                var title = extraction.FailureCategory switch
+                {
+                    ExtractionFailureCategory.Timeout => "Job extraction timed out",
+                    ExtractionFailureCategory.Blocked => "Job source blocked extraction",
+                    ExtractionFailureCategory.HttpError or ExtractionFailureCategory.BrowserError => "Job source could not be reached",
+                    _ => "No recognizable job posting found"
+                };
+
+                return Results.Problem(
+                    statusCode: statusCode,
+                    title: title,
+                    extensions: new Dictionary<string, object?>
+                    {
+                        ["extractionId"] = httpContext.TraceIdentifier,
+                        ["attempts"] = extraction.Attempts
+                    });
             });
 
         return app;
