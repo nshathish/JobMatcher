@@ -5,7 +5,7 @@ namespace JobMatcher.Application.Jobs;
 public sealed class JobExtractionService(
     IEnumerable<IJobExtractor> jobExtractors)
 {
-    public async Task<JobPosting?> ExtractAsync(
+    public async Task<ExtractedJob?> ExtractAsync(
         Uri url,
         CancellationToken cancellationToken = default)
     {

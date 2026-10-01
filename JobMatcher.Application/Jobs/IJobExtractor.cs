@@ -6,7 +6,7 @@ public interface IJobExtractor
 {
     bool CanHandle(Uri url);
 
-    Task<JobPosting?> ExtractAsync(
+    Task<ExtractedJob?> ExtractAsync(
         Uri url,
         CancellationToken cancellationToken = default);
 }

@@ -13,7 +13,7 @@ public static class JobEndpoints
         app.MapPost(
             "/api/jobs/extract",
             async Task<Results<
-                Ok<JobPosting>,
+                Ok<ExtractedJob>,
                 BadRequest<ProblemDetails>,
                 NotFound<ProblemDetails>>> (
                 ExtractJobRequest request,
