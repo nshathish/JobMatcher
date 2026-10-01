@@ -16,15 +16,32 @@ public static class JobEndpoints
                 Ok<ExtractedJob>,
                 BadRequest<ProblemDetails>,
                 NotFound<ProblemDetails>>> (
-                ExtractJobRequest request,
+                ExtractJobRequest? request,
                 JobExtractionService service,
                 CancellationToken cancellationToken) =>
             {
+                if (request is null)
+                    return TypedResults.BadRequest(
+                        new ProblemDetails
+                        {
+                            Title = "Invalid job URL",
+                            Detail = "A request body is required."
+                        });
+
                 if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var url))
                     return TypedResults.BadRequest(
                         new ProblemDetails
                         {
-                            Title = "Invalid job URL"
+                            Title = "Invalid job URL",
+                            Detail = "The request must contain a valid absolute URL."
+                        });
+
+                if (!JobUrlPolicy.TryValidate(url, out var validationError))
+                    return TypedResults.BadRequest(
+                        new ProblemDetails
+                        {
+                            Title = "Invalid job URL",
+                            Detail = validationError
                         });
 
                 var job = await service.ExtractAsync(url, cancellationToken);

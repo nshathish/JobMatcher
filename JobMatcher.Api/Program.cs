@@ -16,6 +16,10 @@ builder.Services.AddHttpClient<IJobExtractor, JsonLdJobExtractor>(client =>
         "Chrome/154.0.0.0 Safari/537.36");
 
     client.DefaultRequestHeaders.Accept.ParseAdd("text/html");
+})
+.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    AllowAutoRedirect = false
 });
 builder.Services.AddScoped<IJobExtractor, PlaywrightJobExtractor>();
 

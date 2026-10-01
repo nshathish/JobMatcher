@@ -22,6 +22,19 @@ public sealed class PlaywrightJobExtractor(HtmlJobParser parser) : IJobExtractor
 
         var page = await browser.NewPageAsync();
 
+        await page.RouteAsync("**/*", async route =>
+        {
+            var requestUri = new Uri(route.Request.Url);
+            if (string.Equals(route.Request.ResourceType, "document", StringComparison.OrdinalIgnoreCase) &&
+                !JobUrlPolicy.IsAllowedRedirect(url, requestUri))
+            {
+                await route.AbortAsync();
+                return;
+            }
+
+            await route.ContinueAsync();
+        });
+
         await page.GotoAsync(
             url.ToString(),
             new PageGotoOptions

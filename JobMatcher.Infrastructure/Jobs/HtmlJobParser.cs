@@ -37,7 +37,7 @@ public sealed class HtmlJobParser
                     ["title"] = "h1 or document.title",
                     ["description"] = "main, article, or document.body"
                 },
-                new[] { "HTML fallback did not identify structured job components." },
+                ["HTML fallback did not identify structured job components."],
                 0.55m));
     }
 

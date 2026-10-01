@@ -12,7 +12,7 @@ public sealed class JsonLdJobExtractor(
     public async Task<ExtractedJob?> ExtractAsync(Uri url, CancellationToken cancellationToken = default)
     {
         using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        if (!response.IsSuccessStatusCode)
+        if ((int)response.StatusCode is >= 300 and < 400 || !response.IsSuccessStatusCode)
             return null;
 
         var html = await response.Content.ReadAsStringAsync(cancellationToken);
