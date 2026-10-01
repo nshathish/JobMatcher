@@ -1,15 +1,24 @@
 using JobMatcher.Api.Endpoints.Job;
 using JobMatcher.Application.Jobs;
 using JobMatcher.Infrastructure.Jobs;
+using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
+builder.Services.AddOptions<JobExtractionOptions>()
+    .Bind(builder.Configuration.GetSection("JobExtraction"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<JobExtractionOptions>>().Value);
+builder.Services.AddSingleton<ExtractionConcurrencyLimiter>();
+builder.Services.AddSingleton<JobExtractionMetrics>();
 
 builder.Services.AddHttpClient<IJobExtractor, JsonLdJobExtractor>(client =>
 {
+    client.Timeout = Timeout.InfiniteTimeSpan;
     client.DefaultRequestHeaders.UserAgent.ParseAdd(
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
         "AppleWebKit/537.36 (KHTML, like Gecko) " +

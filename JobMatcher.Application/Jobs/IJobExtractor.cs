@@ -1,4 +1,4 @@
-﻿using JobMatcher.Domain.Jobs;
+using JobMatcher.Domain.Jobs;
 
 namespace JobMatcher.Application.Jobs;
 
@@ -6,7 +6,8 @@ public interface IJobExtractor
 {
     bool CanHandle(Uri url);
 
-    Task<ExtractedJob?> ExtractAsync(
+    Task<ExtractorResult> ExtractAsync(
         Uri url,
+        string extractionId,
         CancellationToken cancellationToken = default);
 }

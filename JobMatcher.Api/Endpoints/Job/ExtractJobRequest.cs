@@ -1,3 +1,3 @@
-﻿namespace JobMatcher.Api.Endpoints.Job;
+namespace JobMatcher.Api.Endpoints.Job;
 
 public sealed record ExtractJobRequest(string Url);
