@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="JobMatcher.Api/JobMatcher.Api.csproj" />
+  <Project Path="JobMatcher.Application/JobMatcher.Application.csproj" />
+  <Project Path="JobMatcher.Domain/JobMatcher.Domain.csproj" />
+  <Project Path="JobMatcher.Infrastructure/JobMatcher.Infrastructure.csproj" />
+</Solution>

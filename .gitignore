@@ -1,0 +1,41 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio / .NET tooling
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Test and coverage output
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# NuGet and local package artifacts
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+
+# Local environment and secrets
+appsettings.*.json
+!appsettings.json
+secrets.json
+
+# IDE/editor metadata
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Generated documentation for this repository
+docs/
