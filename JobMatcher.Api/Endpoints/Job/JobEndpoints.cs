@@ -12,7 +12,10 @@ public static class JobEndpoints
     {
         app.MapPost(
             "/api/jobs/extract",
-            async Task<IResult> (
+            async Task<Results<
+                Ok<ExtractedJob>,
+                BadRequest<ProblemDetails>,
+                ProblemHttpResult>> (
                 ExtractJobRequest? request,
                 JobExtractionService service,
                 HttpContext httpContext,
@@ -76,7 +79,7 @@ public static class JobEndpoints
                     _ => "No recognizable job posting found"
                 };
 
-                return Results.Problem(
+                return TypedResults.Problem(
                     statusCode: statusCode,
                     title: title,
                     extensions: new Dictionary<string, object?>
