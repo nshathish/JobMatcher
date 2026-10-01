@@ -8,7 +8,7 @@ public sealed class PlaywrightJobExtractor(HtmlJobParser parser) : IJobExtractor
 {
     public bool CanHandle(Uri url) => true;
 
-    public async Task<JobPosting?> ExtractAsync(
+    public async Task<ExtractedJob?> ExtractAsync(
         Uri url,
         CancellationToken cancellationToken = default)
     {

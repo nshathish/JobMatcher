@@ -38,4 +38,5 @@ secrets.json
 Thumbs.db
 
 # Generated documentation for this repository
-docs/
+.docs/
+.tasks/
