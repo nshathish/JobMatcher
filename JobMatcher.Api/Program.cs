@@ -15,7 +15,9 @@ builder.Services.AddOptions<JobExtractionOptions>()
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<JobExtractionOptions>>().Value);
 builder.Services.AddSingleton<ExtractionConcurrencyLimiter>();
 builder.Services.AddSingleton<JobExtractionMetrics>();
+builder.Services.AddSingleton<PlaywrightBrowserManager>();
 
+builder.Services.AddScoped<IJobExtractor, IndeedJobSourceAdapter>();
 builder.Services.AddHttpClient<IJobExtractor, JsonLdJobExtractor>(client =>
     {
         client.Timeout = Timeout.InfiniteTimeSpan;

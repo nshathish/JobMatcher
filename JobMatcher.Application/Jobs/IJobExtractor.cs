@@ -1,5 +1,3 @@
-using JobMatcher.Domain.Jobs;
-
 namespace JobMatcher.Application.Jobs;
 
 public interface IJobExtractor
