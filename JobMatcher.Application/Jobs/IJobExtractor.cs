@@ -2,7 +2,7 @@ using JobMatcher.Domain.Jobs;
 
 namespace JobMatcher.Application.Jobs;
 
-public interface IJobExtractor
+public interface IJobSourceAdapter
 {
     bool CanHandle(Uri url);
 
@@ -10,4 +10,8 @@ public interface IJobExtractor
         Uri url,
         string extractionId,
         CancellationToken cancellationToken = default);
+}
+
+public interface IJobExtractor : IJobSourceAdapter
+{
 }

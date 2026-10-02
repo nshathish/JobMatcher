@@ -18,4 +18,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\JobMatcher.Application\JobMatcher.Application.csproj" />
+  </ItemGroup>
+
 </Project>

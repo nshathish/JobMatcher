@@ -69,7 +69,8 @@ public static class JobEndpoints
                     ExtractionFailureCategory.Timeout => StatusCodes.Status504GatewayTimeout,
                     ExtractionFailureCategory.Blocked or
                     ExtractionFailureCategory.HttpError or
-                    ExtractionFailureCategory.BrowserError => StatusCodes.Status502BadGateway,
+                    ExtractionFailureCategory.BrowserError or
+                    ExtractionFailureCategory.Unsupported => StatusCodes.Status502BadGateway,
                     _ => StatusCodes.Status422UnprocessableEntity
                 };
 
@@ -78,6 +79,7 @@ public static class JobEndpoints
                     ExtractionFailureCategory.Timeout => "Job extraction timed out",
                     ExtractionFailureCategory.Blocked => "Job source blocked extraction",
                     ExtractionFailureCategory.HttpError or ExtractionFailureCategory.BrowserError => "Job source could not be reached",
+                    ExtractionFailureCategory.Unsupported => "Job source requires an authorized integration",
                     _ => "No recognizable job posting found"
                 };
 

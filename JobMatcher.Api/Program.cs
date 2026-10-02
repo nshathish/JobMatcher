@@ -16,7 +16,8 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<JobExtraction
 builder.Services.AddSingleton<ExtractionConcurrencyLimiter>();
 builder.Services.AddSingleton<JobExtractionMetrics>();
 
-builder.Services.AddHttpClient<IJobExtractor, JsonLdJobExtractor>(client =>
+builder.Services.AddScoped<IJobSourceAdapter, IndeedJobSourceAdapter>();
+builder.Services.AddHttpClient<IJobSourceAdapter, JsonLdJobExtractor>(client =>
     {
         client.Timeout = Timeout.InfiniteTimeSpan;
         client.DefaultRequestHeaders.UserAgent.ParseAdd(
@@ -30,7 +31,7 @@ builder.Services.AddHttpClient<IJobExtractor, JsonLdJobExtractor>(client =>
     {
         AllowAutoRedirect = false
     });
-builder.Services.AddScoped<IJobExtractor, PlaywrightJobExtractor>();
+builder.Services.AddScoped<IJobSourceAdapter, PlaywrightJobExtractor>();
 
 builder.Services.AddScoped<JobExtractionService>();
 builder.Services.AddScoped<JsonLdJobParser>();

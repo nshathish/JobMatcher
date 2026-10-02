@@ -13,7 +13,7 @@ public sealed class JsonLdJobExtractor(
     JobExtractionMetrics metrics,
     ILogger<JsonLdJobExtractor> logger) : IJobExtractor
 {
-    public bool CanHandle(Uri url) => true;
+    public bool CanHandle(Uri url) => JobSourcePolicy.IsGenericWebSource(url);
 
     public async Task<ExtractorResult> ExtractAsync(Uri url, string extractionId, CancellationToken cancellationToken = default)
     {

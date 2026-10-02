@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 namespace JobMatcher.Application.Jobs;
 
 public sealed class JobExtractionService(
-    IEnumerable<IJobExtractor> jobExtractors,
+    IEnumerable<IJobSourceAdapter> jobSourceAdapters,
     IOptions<JobExtractionOptions> options,
     JobExtractionMetrics metrics,
     ILogger<JobExtractionService> logger)
@@ -21,7 +21,7 @@ public sealed class JobExtractionService(
 
         try
         {
-            foreach (var extractor in jobExtractors)
+            foreach (var extractor in jobSourceAdapters)
             {
                 if (!extractor.CanHandle(url))
                     continue;

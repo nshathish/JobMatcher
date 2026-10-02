@@ -7,6 +7,7 @@
 - Each endpoint class must group its routes under the class resource prefix with `MapGroup` (for example, job endpoints use `/api/jobs` and define the route as `/extract`, not `/api/jobs/extract`); keep all routes in that class within the group.
 - Give each `MapGroup` a descriptive OpenAPI tag with `WithTags` so Scalar displays a readable resource group name.
 - Inject endpoint loggers as typed `ILogger<EndpointLogger>` parameters (for example, `ILogger<JobEndpointLogger> logger`) instead of injecting `ILoggerFactory` and creating string-named loggers.
+- Add new job-board integrations as `IJobSourceAdapter` implementations with explicit host routing; generic web extractors must not run for a source that requires an authorized integration.
 - Preserve the public API response contract when changing implementation details.
 - Use `ProblemDetails` for errors and keep status codes meaningful: `400` for invalid input, `422` for valid pages that contain no recognizable job, `502` for upstream/source failures, and `504` for timeouts.
 
