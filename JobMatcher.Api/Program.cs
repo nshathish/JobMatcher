@@ -17,19 +17,19 @@ builder.Services.AddSingleton<ExtractionConcurrencyLimiter>();
 builder.Services.AddSingleton<JobExtractionMetrics>();
 
 builder.Services.AddHttpClient<IJobExtractor, JsonLdJobExtractor>(client =>
-{
-    client.Timeout = Timeout.InfiniteTimeSpan;
-    client.DefaultRequestHeaders.UserAgent.ParseAdd(
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-        "AppleWebKit/537.36 (KHTML, like Gecko) " +
-        "Chrome/154.0.0.0 Safari/537.36");
+    {
+        client.Timeout = Timeout.InfiniteTimeSpan;
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) " +
+            "Chrome/154.0.0.0 Safari/537.36");
 
-    client.DefaultRequestHeaders.Accept.ParseAdd("text/html");
-})
-.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-{
-    AllowAutoRedirect = false
-});
+        client.DefaultRequestHeaders.Accept.ParseAdd("text/html");
+    })
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AllowAutoRedirect = false
+    });
 builder.Services.AddScoped<IJobExtractor, PlaywrightJobExtractor>();
 
 builder.Services.AddScoped<JobExtractionService>();
@@ -48,7 +48,10 @@ app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
 app.MapGet("/api/health",
-    static () => TypedResults.Ok(new { status = "healthy" }));
+    static () => TypedResults.Ok(new { status = "healthy" }))
+    .WithName("GetHealthStatus")
+    .WithSummary("Check API health")
+    .WithDescription("Returns the current health status of the JobMatcher API.");
 
 app.MapJobEndpoints();
 

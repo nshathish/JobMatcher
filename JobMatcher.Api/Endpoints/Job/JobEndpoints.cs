@@ -10,8 +10,11 @@ public static class JobEndpoints
     public static IEndpointRouteBuilder MapJobEndpoints(
         this IEndpointRouteBuilder app)
     {
-        app.MapPost(
-            "/api/jobs/extract",
+        var jobs = app.MapGroup("/api/jobs")
+            .WithTags("Job Operations");
+
+        jobs.MapPost(
+            "/extract",
             async Task<Results<
                 Ok<ExtractedJob>,
                 BadRequest<ProblemDetails>,
@@ -19,7 +22,7 @@ public static class JobEndpoints
                 ExtractJobRequest? request,
                 JobExtractionService service,
                 HttpContext httpContext,
-                ILoggerFactory loggerFactory,
+                ILogger<JobEndpointLogger> logger,
                 CancellationToken cancellationToken) =>
             {
                 if (request is null)
@@ -46,7 +49,6 @@ public static class JobEndpoints
                             Detail = validationError
                         });
 
-                var logger = loggerFactory.CreateLogger("JobMatcher.Api.JobEndpoints");
                 using var scope = logger.BeginScope(new Dictionary<string, object?>
                 {
                     ["ExtractionId"] = httpContext.TraceIdentifier,
@@ -87,7 +89,10 @@ public static class JobEndpoints
                         ["extractionId"] = httpContext.TraceIdentifier,
                         ["attempts"] = extraction.Attempts
                     });
-            });
+            })
+            .WithName("ExtractJobPosting")
+            .WithSummary("Extract Job Posting")
+            .WithDescription("Extracts structured job posting details from a public job URL.");
 
         return app;
     }
