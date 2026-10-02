@@ -1,6 +1,13 @@
 <Solution>
-  <Project Path="JobMatcher.Api/JobMatcher.Api.csproj" />
-  <Project Path="JobMatcher.Application/JobMatcher.Application.csproj" />
-  <Project Path="JobMatcher.Domain/JobMatcher.Domain.csproj" />
-  <Project Path="JobMatcher.Infrastructure/JobMatcher.Infrastructure.csproj" />
+  <Folder Name="/Src/">
+    <Project Path="JobMatcher.Api/JobMatcher.Api.csproj" />
+    <Project Path="JobMatcher.Application/JobMatcher.Application.csproj" />
+    <Project Path="JobMatcher.Domain/JobMatcher.Domain.csproj" />
+    <Project Path="JobMatcher.Infrastructure/JobMatcher.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="JobMatcher.Api.Tests/JobMatcher.Api.Tests.csproj" Id="5ade5ed7-95c0-47a7-b63c-f45819b9efc7" />
+    <Project Path="JobMatcher.Application.Tests/JobMatcher.Application.Tests.csproj" Id="f6a3b390-f84c-4aa6-9741-d3b170d5fe40" />
+    <Project Path="JobMatcher.Infrastructure.Tests/JobMatcher.Infrastructure.Tests.csproj" Id="98171d4f-111d-44a8-a417-193ad5889e3a" />
+  </Folder>
 </Solution>

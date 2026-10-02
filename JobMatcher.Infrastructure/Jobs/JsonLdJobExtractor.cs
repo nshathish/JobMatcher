@@ -57,6 +57,9 @@ public sealed class JsonLdJobExtractor(
 
             metrics.ResponseBytes(total);
             var html = Encoding.UTF8.GetString(buffer.GetBuffer(), 0, checked((int)buffer.Length));
+            if (JobBlockedPageDetector.IsBlocked(html))
+                return new ExtractorResult(null, ExtractionOutcome.Failed, ExtractionFailureCategory.Blocked, "blocked_page", (int)response.StatusCode, total);
+
             var job = await parser.ParseAsync(html, url, timeout.Token);
             return job is null
                 ? new ExtractorResult(null, ExtractionOutcome.NoMatch, ResponseBytes: total)

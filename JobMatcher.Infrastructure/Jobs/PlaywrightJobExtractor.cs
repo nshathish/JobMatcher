@@ -48,6 +48,9 @@ public sealed class PlaywrightJobExtractor(
 
             await page.GotoAsync(url.ToString(), new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle, Timeout = milliseconds }).WaitAsync(timeout.Token);
             var html = await page.ContentAsync().WaitAsync(timeout.Token);
+            if (JobBlockedPageDetector.IsBlocked(html))
+                return new ExtractorResult(null, ExtractionOutcome.Failed, ExtractionFailureCategory.Blocked, "blocked_page");
+
             var job = await parser.ParseAsync(html, url, timeout.Token);
             return job is null
                 ? new ExtractorResult(null, ExtractionOutcome.NoMatch)
