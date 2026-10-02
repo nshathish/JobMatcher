@@ -1,5 +1,4 @@
 using JobMatcher.Application.Jobs;
-using JobMatcher.Domain.Jobs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Playwright;
@@ -11,6 +10,7 @@ public sealed class PlaywrightJobExtractor(
     IOptions<JobExtractionOptions> options,
     ExtractionConcurrencyLimiter concurrencyLimiter,
     JobExtractionMetrics metrics,
+    PlaywrightBrowserManager browserManager,
     ILogger<PlaywrightJobExtractor> logger) : IJobExtractor
 {
     public bool CanHandle(Uri url) => JobSourcePolicy.IsGenericWebSource(url);
@@ -19,19 +19,31 @@ public sealed class PlaywrightJobExtractor(
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(options.Value.BrowserTimeoutSeconds));
-        await concurrencyLimiter.WaitAsync(timeout.Token);
-        metrics.BrowserStarted();
+        var acquired = false;
+        var browserStarted = false;
+        IPage? page = null;
+        IBrowserContext? context = null;
 
         try
         {
-            using var playwright = await Playwright.CreateAsync();
-            await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
-            await using var page = await browser.NewPageAsync();
+            await concurrencyLimiter.WaitAsync(timeout.Token);
+            acquired = true;
+
+            metrics.BrowserStarted();
+            browserStarted = true;
+
+            var browser = await browserManager.GetBrowserAsync(timeout.Token);
+            context = await browser.NewContextAsync(new BrowserNewContextOptions
+            {
+                Locale = "en-GB",
+                TimezoneId = "Europe/London",
+                JavaScriptEnabled = true
+            });
+            page = await context.NewPageAsync();
             var milliseconds = options.Value.BrowserTimeoutSeconds * 1000;
 
             page.SetDefaultNavigationTimeout(milliseconds);
             page.SetDefaultTimeout(milliseconds);
-            using var cancellationRegistration = timeout.Token.Register(() => _ = page.CloseAsync());
 
             await page.RouteAsync("**/*", async route =>
             {
@@ -39,6 +51,10 @@ public sealed class PlaywrightJobExtractor(
                 if (string.Equals(route.Request.ResourceType, "document", StringComparison.OrdinalIgnoreCase) &&
                     !JobUrlPolicy.IsAllowedRedirect(url, requestUri))
                 {
+                    logger.LogInformation(
+                        "Document navigation rejected. OriginalHost={OriginalHost}, RedirectHost={RedirectHost}",
+                        url.Host,
+                        requestUri.Host);
                     await route.AbortAsync();
                     return;
                 }
@@ -46,10 +62,71 @@ public sealed class PlaywrightJobExtractor(
                 await route.ContinueAsync();
             });
 
-            await page.GotoAsync(url.ToString(), new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle, Timeout = milliseconds }).WaitAsync(timeout.Token);
+            var response = await page.GotoAsync(
+                url.ToString(),
+                new PageGotoOptions
+                {
+                    WaitUntil = WaitUntilState.DOMContentLoaded,
+                    Timeout = milliseconds
+                }).WaitAsync(timeout.Token);
+
+            if (response is null)
+            {
+                return new ExtractorResult(
+                    null,
+                    ExtractionOutcome.Failed,
+                    ExtractionFailureCategory.BrowserError,
+                    "navigation_no_response");
+            }
+
+            var finalHost = Uri.TryCreate(page.Url, UriKind.Absolute, out var finalUri)
+                ? finalUri.Host
+                : null;
+            logger.LogInformation(
+                "Browser navigation completed for {ExtractionId}. Status={Status}, RequestedHost={RequestedHost}, FinalHost={FinalHost}",
+                extractionId,
+                response.Status,
+                url.Host,
+                finalHost);
+
+            await page.WaitForLoadStateAsync(
+                LoadState.DOMContentLoaded,
+                new PageWaitForLoadStateOptions { Timeout = milliseconds });
+
+            try
+            {
+                await page.WaitForSelectorAsync(
+                    "main, article, h1, [role='main']",
+                    new PageWaitForSelectorOptions
+                    {
+                        State = WaitForSelectorState.Attached,
+                        Timeout = Math.Min(milliseconds, 5_000)
+                    }).WaitAsync(timeout.Token);
+            }
+            catch (TimeoutException)
+            {
+                // Some valid job pages expose content only in the document body.
+                // Let the conservative HTML parser make the final determination.
+            }
+
             var html = await page.ContentAsync().WaitAsync(timeout.Token);
-            if (JobBlockedPageDetector.IsBlocked(html))
-                return new ExtractorResult(null, ExtractionOutcome.Failed, ExtractionFailureCategory.Blocked, "blocked_page");
+            var blockDetection = JobBlockedPageDetector.Detect(html, response.Status);
+            if (blockDetection.IsBlocked)
+            {
+                logger.LogWarning(
+                    "Browser navigation blocked for {ExtractionId} {Host}. Status={Status}, Reason={Reason}",
+                    extractionId,
+                    url.Host,
+                    response.Status,
+                    blockDetection.Reasons[0]);
+
+                return new ExtractorResult(
+                    null,
+                    ExtractionOutcome.Failed,
+                    ExtractionFailureCategory.Blocked,
+                    $"blocked_{blockDetection.Reasons[0]}",
+                    response.Status);
+            }
 
             var job = await parser.ParseAsync(html, url, timeout.Token);
             return job is null
@@ -73,8 +150,17 @@ public sealed class PlaywrightJobExtractor(
         }
         finally
         {
-            metrics.BrowserFinished();
-            concurrencyLimiter.Release();
+            if (page is not null)
+                await page.CloseAsync();
+
+            if (context is not null)
+                await context.CloseAsync();
+
+            if (browserStarted)
+                metrics.BrowserFinished();
+
+            if (acquired)
+                concurrencyLimiter.Release();
         }
     }
 }

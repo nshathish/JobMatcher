@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace JobMatcher.Infrastructure.Jobs;
 
 public sealed class IndeedJobSourceAdapter(
-    ILogger<IndeedJobSourceAdapter> logger) : IJobSourceAdapter
+    ILogger<IndeedJobSourceAdapter> logger) : IJobExtractor
 {
     public bool CanHandle(Uri url) => JobSourcePolicy.IsIndeed(url);
 

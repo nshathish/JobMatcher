@@ -1,6 +1,5 @@
 using System.Text;
 using JobMatcher.Application.Jobs;
-using JobMatcher.Domain.Jobs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -31,7 +30,10 @@ public sealed class JsonLdJobExtractor(
                 var category = response.StatusCode is System.Net.HttpStatusCode.Forbidden or System.Net.HttpStatusCode.TooManyRequests
                     ? ExtractionFailureCategory.Blocked
                     : ExtractionFailureCategory.HttpError;
-                return new ExtractorResult(null, ExtractionOutcome.Failed, category, "http_error", (int)response.StatusCode);
+                var errorCode = category == ExtractionFailureCategory.Blocked
+                    ? $"blocked_http_{(int)response.StatusCode}"
+                    : "http_error";
+                return new ExtractorResult(null, ExtractionOutcome.Failed, category, errorCode, (int)response.StatusCode);
             }
 
             var maxBytes = options.Value.MaxResponseBytes;
@@ -57,8 +59,17 @@ public sealed class JsonLdJobExtractor(
 
             metrics.ResponseBytes(total);
             var html = Encoding.UTF8.GetString(buffer.GetBuffer(), 0, checked((int)buffer.Length));
-            if (JobBlockedPageDetector.IsBlocked(html))
-                return new ExtractorResult(null, ExtractionOutcome.Failed, ExtractionFailureCategory.Blocked, "blocked_page", (int)response.StatusCode, total);
+            var blockDetection = JobBlockedPageDetector.Detect(html, (int)response.StatusCode);
+            if (blockDetection.IsBlocked)
+            {
+                return new ExtractorResult(
+                    null,
+                    ExtractionOutcome.Failed,
+                    ExtractionFailureCategory.Blocked,
+                    $"blocked_{blockDetection.Reasons[0]}",
+                    (int)response.StatusCode,
+                    total);
+            }
 
             var job = await parser.ParseAsync(html, url, timeout.Token);
             return job is null
